@@ -1,30 +1,8 @@
 import requests
-import secret
+import mySecret
 
-my_id = '17841459012723489'
-
-def GetMyId(token):
-    # Get the connected Instagram account ID
-    endpoint = f'https://graph.facebook.com/v21.0/me/accounts?access_token={token}'
-
-    response = requests.get(endpoint)
-    if response.status_code == 200:
-        data = response.json()
-        if data['data']:
-            page_id = data['data'][0]['id']
-            # Get Instagram Business Account ID
-            insta_endpoint = f'https://graph.facebook.com/v16.0/{page_id}?fields=instagram_business_account&access_token={token}'
-            insta_response = requests.get(insta_endpoint)
-            insta_data = insta_response.json()
-            instagram_user_id = insta_data['instagram_business_account']['id']
-            print(f"Instagram User ID: {instagram_user_id}")
-        else:
-            print("No connected pages found.")
-    else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+# Gets last 25 posts
 def GetMediaId(instagram_user_id, token):
-    # Replace 'instagram_user_id' with the ID obtained earlier
     media_endpoint = f'https://graph.facebook.com/v21.0/{instagram_user_id}/media?fields=id&access_token={token}'
 
     idList = []
@@ -40,7 +18,6 @@ def GetMediaId(instagram_user_id, token):
         print(media_response.text)
     return idList
 def GetPostLikes(media_id, token):
-    # Replace with your Media ID
     like_endpoint = f'https://graph.facebook.com/v21.0/{media_id}?fields=like_count&access_token={token}'
 
     like_response = requests.get(like_endpoint)
@@ -50,11 +27,29 @@ def GetPostLikes(media_id, token):
     else:
         print(f"Error: {like_response.status_code}")
         print(like_response.text)
+def GetPostData(media_id, token):
+    insights_endpoint = f'https://graph.facebook.com/v21.0/{media_id}/insights'
+    metrics = 'likes,comments,reach,saved,shares,follows'
+    params = {
+        'metric': metrics,
+        'access_token': token
+    }
+    
+    insights_response = requests.get(insights_endpoint, params=params)
+    
+    if insights_response.status_code == 200:
+        insights_data = insights_response.json()
+        print(f"POST: {media_id}")
+        for metric in insights_data['data']:
+            name = metric['name']
+            value = metric['values'][0]['value']
+            print(f"{name.capitalize()}: {value}")
+    else:
+        print(f"Error: {insights_response.status_code}")
+        print(insights_response.text)
 
-
-# GetMyId(access_token)
-idList = GetMediaId(my_id, access_token)
-print(idList)
+idList = GetMediaId(mySecret.my_id, mySecret.access_token)
 
 for id in idList:
-    GetPostLikes(id, access_token)
+    # GetPostLikes(id, mySecret.access_token)
+    GetPostData(id, mySecret.access_token)

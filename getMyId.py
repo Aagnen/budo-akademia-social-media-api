@@ -1,5 +1,5 @@
 import requests
-import secret
+import mySecret
 
 
 def GetMyId(token):
@@ -23,4 +23,4 @@ def GetMyId(token):
         print(f"Error: {response.status_code}")
         print(response.text)
 
-GetMyId(secret.access_token)
+GetMyId(mySecret.access_token)
