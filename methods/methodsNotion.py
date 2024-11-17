@@ -1,59 +1,100 @@
 import requests
 import config
 from notion_client import Client
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 notion = Client(auth=config.NOTION_API_TOKEN)
 
+
 def create_notion_page(inst_id, caption, timestamp, database_id):
+    """
+    Create a new page in the Notion database with the given Instagram data.
+
+    Args:
+        inst_id (str): The Instagram ID.
+        caption (str): The caption of the Instagram post.
+        timestamp (str): The timestamp of the post.
+        database_id (str): The Notion database ID.
+
+    Returns:
+        dict or None: The response from Notion API if successful, None otherwise.
+    """
+    properties = {
+        "InstId": {
+            "rich_text": [{
+                "type": "text",
+                "text": {"content": inst_id}
+            }]
+        },
+        "caption": {
+            "rich_text": [{
+                "type": "text",
+                "text": {"content": caption or ""}
+            }]
+        },
+        "Wstawiony": {
+            "date": {
+                "start": timestamp  # Using the timestamp from Instagram
+            }
+        }
+    }
+
     try:
         response = notion.pages.create(
-            **{
-                "parent": {"database_id": database_id},
-                "properties": {
-                    "InstId": {
-                        "rich_text": [{
-                            "type": "text",
-                            "text": {"content": inst_id}
-                        }]
-                    },
-                    "caption": {
-                        "rich_text": [{
-                            "type": "text",
-                            "text": {"content": caption or ""}
-                        }]
-                    },
-                    "Wstawiony": {
-                        "date": {
-                            "start": timestamp  # Using the timestamp from Instagram
-                        }
-                    }
-                }
-            }
+            parent={"database_id": database_id},
+            properties=properties
         )
-        print(f"   Created page for InstId: {inst_id}")
+        logger.info(f"Created page for InstId: {inst_id}")
+        return response
     except Exception as e:
-        print(f"   Error creating page for InstId {inst_id}: {e}")
+        logger.error(f"Error creating page for InstId {inst_id}: {e}")
+        return None
 
-def if_page_exists(inst_id, database_id):
+
+def page_exists(inst_id, database_id):
+    """
+    Check if a page with the given InstId exists in the Notion database.
+
+    Args:
+        inst_id (str): The Instagram ID.
+        database_id (str): The Notion database ID.
+
+    Returns:
+        bool: True if the page exists, False otherwise.
+    """
     try:
-        # Query the database to check for pages with the given InstId
         response = notion.databases.query(
-            **{
-                "database_id": database_id,
-                "filter": {
-                    "property": "InstId",
-                    "rich_text": {
-                        "equals": inst_id
-                    }
+            database_id=database_id,
+            filter={
+                "property": "InstId",
+                "rich_text": {
+                    "equals": inst_id
                 }
             }
         )
-        return len(response['results']) > 0
+        exists = len(response['results']) > 0
+        logger.debug(f"Page exists for InstId {inst_id}: {exists}")
+        return exists
     except Exception as e:
-        print(f"Error checking if page exists for InstId {inst_id}: {e}")
+        logger.error(f"Error checking if page exists for InstId {inst_id}: {e}")
         return False
-    
+
+
 def get_notion_entries_with_property(database_id, property_name):
+    """
+    Retrieve entries from the Notion database where the specified property is not empty.
+
+    Args:
+        database_id (str): The Notion database ID.
+        property_name (str): The property to filter on.
+
+    Returns:
+        list: A list of Notion page entries.
+    """
     entries = []
     try:
         has_more = True
@@ -71,39 +112,49 @@ def get_notion_entries_with_property(database_id, property_name):
 
             response = notion.databases.query(**params)
             entries.extend(response['results'])
-            has_more = response['has_more']
+            has_more = response.get('has_more', False)
             next_cursor = response.get('next_cursor')
     except Exception as e:
-        print(f"Error fetching Notion entries: {e}")
-    return entries
+        logger.error(f"Error fetching Notion entries: {e}")
+    return entries  # Ensure entries are returned regardless of exceptions
 
-def update_notion_entry_with_Inst_insights(page_id, insights):
+
+def update_notion_entry_with_insights(page_id, insights, platform):
+    """
+    Update a Notion page with insights data from a specified platform.
+
+    Args:
+        page_id (str): The Notion page ID.
+        insights (dict): A dictionary containing insights data.
+        platform (str): The platform name ('Instagram' or 'TikTok').
+
+    Returns:
+        bool: True if the update was successful, False otherwise.
+    """
     properties = {}
-    properties['Inst reach'] = {'number': insights.get('reach', 0)}
-    properties['Inst likes'] = {'number': insights.get('likes', 0)}
-    properties['Inst saves'] = {'number': insights.get('saved', 0)}
-    properties['Inst Shares'] = {'number': insights.get('shares', 0)}
-
-    if 'follows' in insights:
-        properties['Inst FollowUps'] = {'number': insights.get('follows', 0)}
+    if platform.lower() == 'instagram':
+        properties.update({
+            'Inst reach': {'number': insights.get('reach', 0)},
+            'Inst likes': {'number': insights.get('likes', 0)},
+            'Inst saves': {'number': insights.get('saved', 0)},
+            'Inst Shares': {'number': insights.get('shares', 0)},
+            'Inst FollowUps': {'number': insights.get('follows')}
+            if 'follows' in insights else {'number': None}
+        })
+    elif platform.lower() == 'tiktok':
+        properties.update({
+            'Tiktok reach': {'number': insights.get('Plays', 0)},  # Plays correspond to reach
+            'Tiktok likes': {'number': insights.get('Likes', 0)},
+            'Tiktok shares': {'number': insights.get('Shares', 0)}
+        })
     else:
-        properties['Inst FollowUps'] = {'number': None}
+        logger.error(f"Unsupported platform: {platform}")
+        return False
 
     try:
         notion.pages.update(page_id=page_id, properties=properties)
-        print(f"Updated Notion page {page_id} with insights.")
+        logger.info(f"Updated Notion page {page_id} with {platform} insights.")
+        return True
     except Exception as e:
-        print(f"Error updating Notion page {page_id}: {e}")
-
-def update_notion_entry_with_Tiktok_insights(page_id, insights):
-    properties = {
-        'Tiktok reach': {'number': insights.get('Plays', 0)},   # Plays correspond to reach
-        'Tiktok likes': {'number': insights.get('Likes', 0)},
-        'Tiktok shares': {'number': insights.get('Shares', 0)}
-    }
-
-    try:
-        notion.pages.update(page_id=page_id, properties=properties)
-        print(f"Updated Notion page {page_id} with insights: {properties}")
-    except Exception as e:
-        print(f"Error updating Notion page {page_id}: {e}")
+        logger.error(f"Error updating Notion page {page_id}: {e}")
+        return False
