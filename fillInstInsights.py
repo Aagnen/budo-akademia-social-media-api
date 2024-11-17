@@ -2,7 +2,7 @@ import config
 from methods import methodsNotion
 from methods import methodsInstagram
 
-entries = methodsNotion.get_notion_entries_with_instid(config.NOTION_DATABASE_ID)
+entries = methodsNotion.get_notion_entries_with_instid(config.NOTION_DATABASE_ID, "InstId")
 print(f"Found {len(entries)} entries with InstId.")
 
 for entry in entries:
@@ -17,7 +17,7 @@ for entry in entries:
         insights = methodsInstagram.fetch_post_insights(inst_id)
 
         if insights:
-            methodsNotion.update_notion_entry_with_insights(page_id, insights)
+            methodsNotion.update_notion_entry_with_Inst_insights(page_id, insights)
         else:
             print(f"   No insights available for InstId {inst_id}.")
     else:

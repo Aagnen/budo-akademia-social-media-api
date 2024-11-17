@@ -53,7 +53,7 @@ def if_page_exists(inst_id, database_id):
         print(f"Error checking if page exists for InstId {inst_id}: {e}")
         return False
     
-def get_notion_entries_with_instid(database_id):
+def get_notion_entries_with_property(database_id, property_name):
     entries = []
     try:
         has_more = True
@@ -62,7 +62,7 @@ def get_notion_entries_with_instid(database_id):
             params = {
                 "database_id": database_id,
                 "filter": {
-                    "property": "InstId",
+                    "property": property_name,
                     "rich_text": {"is_not_empty": True}
                 }
             }
@@ -77,7 +77,7 @@ def get_notion_entries_with_instid(database_id):
         print(f"Error fetching Notion entries: {e}")
     return entries
 
-def update_notion_entry_with_insights(page_id, insights):
+def update_notion_entry_with_Inst_insights(page_id, insights):
     properties = {}
     properties['Inst reach'] = {'number': insights.get('reach', 0)}
     properties['Inst likes'] = {'number': insights.get('likes', 0)}
@@ -92,5 +92,18 @@ def update_notion_entry_with_insights(page_id, insights):
     try:
         notion.pages.update(page_id=page_id, properties=properties)
         print(f"Updated Notion page {page_id} with insights.")
+    except Exception as e:
+        print(f"Error updating Notion page {page_id}: {e}")
+
+def update_notion_entry_with_Tiktok_insights(page_id, insights):
+    properties = {
+        'Tiktok reach': {'number': insights.get('Plays', 0)},   # Plays correspond to reach
+        'Tiktok likes': {'number': insights.get('Likes', 0)},
+        'Tiktok shares': {'number': insights.get('Shares', 0)}
+    }
+
+    try:
+        notion.pages.update(page_id=page_id, properties=properties)
+        print(f"Updated Notion page {page_id} with insights: {properties}")
     except Exception as e:
         print(f"Error updating Notion page {page_id}: {e}")
