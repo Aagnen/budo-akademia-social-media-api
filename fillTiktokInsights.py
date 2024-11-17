@@ -2,7 +2,6 @@ import config
 import asyncio
 from methods import notionMethods
 from methods import tiktokMethods
-from methods.logger import configure_logger
 from methods.logger import logger
 
 async def main():

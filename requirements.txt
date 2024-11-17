@@ -1,0 +1,4 @@
+tiktokpy==0.9.4
+notion-client==2.0.0
+colorlog==6.6.0
+requests==2.31.0

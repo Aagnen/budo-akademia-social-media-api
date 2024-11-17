@@ -1,4 +1,4 @@
-import logging
+import config
 import asyncio
 from tiktokpy import TikTokPy
 from .logger import logger
@@ -21,7 +21,7 @@ async def fetch_feed(bot):
     Returns:
         List[dict]: A list of dictionaries containing video insights.
     """
-    user_feed_items = await bot.user_feed(username="@budoakademia", amount=9)
+    user_feed_items = await bot.user_feed(username=config.TIKTOK_NAME, amount=9)
     insights = []
     for item in user_feed_items:
         # Gather insights
