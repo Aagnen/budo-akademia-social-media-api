@@ -1,11 +1,7 @@
 import config
 from . import notionmethods
 from . import instagramMethods
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from methods.logger import logger
 
 # Fetch all posts from Instagram
 posts = instagramMethods.fetch_all_posts(config.INSTAGRAM_USER_ID)

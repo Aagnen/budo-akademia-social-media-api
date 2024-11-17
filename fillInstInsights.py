@@ -1,14 +1,10 @@
 import config
-from . import notionmethods
-from . import instagramMethods
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from methods import notionMethods
+from methods import instagramMethods
+from methods.logger import logger
 
 # Retrieve entries from Notion where 'InstId' property is not empty
-entries = notionmethods.get_notion_entries_with_property(config.NOTION_DATABASE_ID, "InstId")
+entries = notionMethods.get_notion_entries_with_property(config.NOTION_DATABASE_ID, "InstId")
 logger.info(f"Found {len(entries)} entries with InstId.")
 
 for entry in entries:
@@ -18,16 +14,16 @@ for entry in entries:
     inst_id_text = inst_id_property.get('rich_text', [])
     if inst_id_text:
         inst_id = inst_id_text[0]['plain_text']
-        logger.info(f"Processing InstId: {inst_id}")
+        logger.debug(f"🚀 Processing InstId: {inst_id}")
 
         # Fetch insights for the Instagram post
         insights = instagramMethods.fetch_post_insights(inst_id)
 
         if insights:
             # Update the Notion page with the insights
-            success = notionmethods.update_notion_entry_with_insights(page_id, insights, platform='Instagram')
+            success = notionMethods.update_notion_entry_with_insights(page_id, insights, platform='Instagram')
             if success:
-                logger.info(f"Updated page {page_id} with insights for InstId {inst_id}.")
+                logger.info(f"✅ Done InstId: {inst_id}")
             else:
                 logger.error(f"Failed to update page {page_id} for InstId {inst_id}.")
         else:

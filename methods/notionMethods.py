@@ -1,14 +1,9 @@
 import requests
 import config
 from notion_client import Client
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from .logger import logger
 
 notion = Client(auth=config.NOTION_API_TOKEN)
-
 
 def create_notion_page(inst_id, caption, timestamp, database_id):
     """
@@ -153,7 +148,7 @@ def update_notion_entry_with_insights(page_id, insights, platform):
 
     try:
         notion.pages.update(page_id=page_id, properties=properties)
-        logger.info(f"Updated Notion page {page_id} with {platform} insights.")
+        logger.info(f"✅ Updated Notion page {page_id} with {platform} insights.")
         return True
     except Exception as e:
         logger.error(f"Error updating Notion page {page_id}: {e}")

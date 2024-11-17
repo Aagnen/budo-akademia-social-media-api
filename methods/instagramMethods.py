@@ -1,10 +1,6 @@
 import requests
 import config
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from .logger import logger
 
 ACCESS_TOKEN = config.INSTAGRAM_ACCESS_TOKEN
 API_VERSION = 'v17.0'
@@ -118,7 +114,7 @@ def fetch_post_details(media_id):
         response = requests.get(endpoint, params=params)
         response.raise_for_status()
         media_data = response.json()
-        logger.info(f"Fetched details for Media ID: {media_data.get('id')}")
+        logger.debug(f"Fetched details for Media ID: {media_data.get('id')}")
         return media_data
     except requests.exceptions.HTTPError as http_err:
         logger.error(f"HTTP error occurred while fetching media details: {http_err}")
@@ -177,7 +173,7 @@ def fetch_post_insights(media_id):
             if values:
                 value = values[0].get('value')
                 insights[name] = value
-        logger.info(f"Fetched insights for Media ID {media_id}")
+        logger.debug(f"Fetched insights for Media ID {media_id}")
         return insights
     except requests.exceptions.HTTPError as http_err:
         logger.error(f"HTTP error occurred while fetching insights for Media ID {media_id}: {http_err}")
